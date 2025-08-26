@@ -62,7 +62,6 @@ _config() {
         # These commands configure some options in the database.
         "/home/${username}/bin/filebrowser" config set -t "/home/${username}/.ssl/${username}-self-signed.crt" -k "/home/${username}/.ssl/${username}-self-signed.key" -d "/home/${username}/.config/Filebrowser/filebrowser.db"
         "/home/${username}/bin/filebrowser" config set -a 0.0.0.0 -p "${app_port_http}" -l "/home/${username}/.config/Filebrowser/filebrowser.log" -d "/home/${username}/.config/Filebrowser/filebrowser.db"
-        "/home/${username}/bin/filebrowser" users add "${username}" "${password}" --perm.admin -d "/home/${username}/.config/Filebrowser/filebrowser.db"
     } >> "$log" 2>&1
 
     # Set the permissions after we are finsished configuring filebrowser.
@@ -116,11 +115,21 @@ SERVICE
     echo_progress_done "Filebrowser service started"
 }
 
+# Create user
+_create_user() {
+    systemctl stop "filebrowser.service"
+    {
+       "/home/${username}/bin/filebrowser" config set --minimum-password-length "${#password}" -d "/home/${username}/.config/Filebrowser/filebrowser.db"
+       "/home/${username}/bin/filebrowser" users add "${username}" "${password}" --perm.admin -d "/home/${username}/.config/Filebrowser/filebrowser.db"
+    } >> "$log" 2>&1
+    systemctl start "filebrowser.service"
+}
+
 _install
 _config
 _nginx
 _systemd
-
+_create_user
 # This file is created after installation to prevent reinstalling. You will need to remove the app first which deletes this file.
 touch "/install/.filebrowser.lock"
 
